@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>국어 - '누가'를 찾아요 (최종 완성본)</title>
+  <style>
+    :root {
+      --bg: #F8FAFC; --primary: #2563EB; --accent: #F59E0B;
+      --success: #16A34A; --help: #EA580C; --text: #0F172A;
+    }
+    * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+    body {
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg); color: var(--text);
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* 1. 상단 바 */
+    header {
+      background: #1E293B; color: white; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    }
+    .tabs, .students { display: flex; gap: 6px; align-items: center; }
+    .btn-tab {
+      background: #334155; color: #CBD5E1; border: none; padding: 10px 14px;
+      font-size: 1.15rem; font-weight: bold; border-radius: 10px; cursor: pointer;
+    }
+    .btn-tab.active { background: var(--accent); color: #000; box-shadow: 0 0 10px var(--accent); }
+    
+    .btn-stu {
+      background: #475569; color: white; border: 2px solid transparent;
+      padding: 8px 12px; font-size: 1.05rem; font-weight: bold; border-radius: 8px; cursor: pointer;
+    }
+    .btn-stu.active { background: var(--success); border-color: #FFF; transform: scale(1.06); }
+    .btn-iep {
+      background: #E11D48; color: white; border: none; padding: 8px 14px;
+      font-size: 1.05rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-left: 6px;
+    }
+
+    /* 2. 메인 학습 화면 */
+    main {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 16px; position: relative;
+    }
+    .step-badge {
+      font-size: 1.4rem; font-weight: bold; color: var(--primary);
+      background: #DBEAFE; padding: 8px 22px; border-radius: 30px; margin-bottom: 14px;
+    }
+    .main-card {
+      background: white; border: 5px solid #CBD5E1; border-radius: 24px;
+      padding: 25px 40px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+      max-width: 960px; width: 100%;
+    }
+    .visual-box { font-size: 6.5rem; line-height: 1.15; margin-bottom: 12px; }
+    .custom-img { max-height: 170px; border-radius: 16px; display: none; margin: 0 auto 12px; object-fit: contain; }
+    
+    .sentence { font-size: 3rem; font-weight: 900; word-break: keep-all; margin: 12px 0; }
+    .who-highlight {
+      color: #D97706; background: #FEF3C7; padding: 4px 16px;
+      border-radius: 12px; border: 3px dashed #F59E0B; display: inline-block;
+    }
+
+    /* 2분할 선택 카드 */
+    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 960px; }
+    .choice-card {
+      background: white; border: 6px solid #CBD5E1; border-radius: 24px;
+      padding: 28px 20px; text-align: center; cursor: pointer; transition: 0.15s; position: relative;
+    }
+    .choice-card:hover, .choice-card:active { border-color: var(--primary); background: #EFF6FF; }
+    .key-hint {
+      position: absolute; top: 12px; left: 16px; background: #E2E8F0; color: #334155;
+      font-size: 1.1rem; font-weight: bold; padding: 4px 10px; border-radius: 8px;
+    }
+    .choice-label { font-size: 2.6rem; font-weight: bold; margin-top: 10px; }
+
+    /* 타이핑 입력창 */
+    .type-input {
+      font-size: 2.3rem; font-weight: bold; text-align: center; width: 260px;
+      padding: 8px 12px; border: 4px solid var(--primary); border-radius: 12px; background: #EFF6FF;
+    }
+
+    /* 3. 하단 조작 바 */
+    footer {
+      background: #E2E8F0; padding: 10px 20px; display: flex;
+      justify-content: space-between; align-items: center; font-size: 1.05rem; font-weight: bold; flex-wrap: wrap; gap: 10px;
+    }
+    .nav-btns button {
+      font-size: 1.15rem; font-weight: bold; padding: 10px 18px;
+      border-radius: 10px; border: none; cursor: pointer; background: var(--primary); color: white; margin-left: 4px;
+    }
+    .nav-btns button.reward { background: var(--success); }
+    .nav-btns button.help { background: var(--help); }
+
+    /* 모달 및 토스트 */
+    #iepModal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal-box { background: white; padding: 28px; border-radius: 20px; width: 650px; max-width: 92%; }
+    textarea { width: 100%; height: 240px; font-size: 1.05rem; padding: 12px; margin: 12px 0; line-height: 1.5; }
+    #rewardToast {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 4.2rem; font-weight: 900; background: rgba(255,255,255,0.97);
+      padding: 35px 55px; border-radius: 30px; border: 8px solid var(--accent);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3); z-index: 90; text-align: center; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 상단: 수준 탭(1~4) + 학생 선택(Tab키로 이동 / 더블클릭 시 이름 수정) -->
+  <header>
+    <div class="tabs">
+      <button class="btn-tab active" onclick="setMode(1)">[1] 가수준(문장/쓰기)</button>
+      <button class="btn-tab" onclick="setMode(2)">[2] 나수준(따라말하기)</button>
+      <button class="btn-tab" onclick="setMode(3)">[3] 다수준(그림선택)</button>
+      <button class="btn-tab" onclick="setMode(4)">[4] 4종 복습퀴즈</button>
+    </div>
+    <div class="students" id="studentBar"></div>
+  </header>
+
+  <!-- 중앙: 수업 화면 -->
+  <main id="stage"></main>
+
+  <!-- 피드백 팝업 -->
+  <div id="rewardToast">🎉 참 잘했어요! 👏</div>
+
+  <!-- IEP 기록 창 -->
+  <div id="iepModal">
+    <div class="modal-box">
+      <h2>📊 오늘 수업 IEP 관찰 기록 (자동 생성)</h2>
+      <textarea id="iepText" readonly></textarea>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="copyIEP()" style="padding:10px 20px; font-size:1.1rem; background:#2563EB; color:white; border:none; border-radius:8px; cursor:pointer;">📋 전체 복사</button>
+        <button onclick="clearIEP()" style="padding:10px 20px; font-size:1.1rem; background:#64748B; color:white; border:none; border-radius:8px; cursor:pointer;">기록 초기화</button>
+        <button onclick="document.getElementById('iepModal').style.display='none'" style="padding:10px 20px; font-size:1.1rem; border-radius:8px; cursor:pointer;">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단: 단축키 안내 및 터치 버튼 -->
+  <footer>
+    <div>
+      ⌨️ <b>[1~4]</b> 수준 &nbsp;|&nbsp; <b>[Tab]</b> 학생변경 &nbsp;|&nbsp; <b>[◀/▶]</b> 이동 &nbsp;|&nbsp; <b>[▲/▼]</b> 왼쪽/오른쪽 선택 &nbsp;|&nbsp; <b>[Space]</b> 음성/바꾸기 &nbsp;|&nbsp; <b>[Enter]</b> 성공 &nbsp;|&nbsp; <b>[0]</b> 도움기록
+    </div>
+    <div class="nav-btns">
+      <button onclick="moveStep(-1)">◀ 이전</button>
+      <button onclick="doSpaceAction()">🔊 소리/바꾸기(Space)</button>
+      <button class="reward" onclick="recordResult(true)">🎉 성공(Enter)</button>
+      <button class="help" onclick="recordResult(false)">🤝 도움필요(0)</button>
+      <button onclick="moveStep(1)">다음 ▶</button>
+    </div>
+  </footer>
+
+<script>
+/* =========================================================
+   ★ [교사용 수업 내용 수정 구역] 
+   - imgUrl / wrongImgUrl: 이미지 주소를 넣으면 이모지 대신 사진이 표시됩니다.
+   ========================================================= */
+const LESSONS = [
+  {
+    who: "엄마가", action: "맛있는 밥을 먹어요.", emoji: "👩🍚", imgUrl: "",
+    altWhos: ["엄마가", "동생이", "아빠가", "선생님이"],
+    wrongWho: "강아지가", wrongEmoji: "🐶🦴", wrongImgUrl: ""
+  },
+  {
+    who: "친구가", action: "즐겁게 학교에 가요.", emoji: "🧒🎒", imgUrl: "",
+    altWhos: ["친구가", "형이", "언니가", "동생이"],
+    wrongWho: "고양이가", wrongEmoji: "🐱🐟", wrongImgUrl: ""
+  },
+  {
+    who: "선생님이", action: "재미있는 책을 읽어요.", emoji: "👩‍🏫📖", imgUrl: "",
+    altWhos: ["선생님이", "엄마가", "친구가", "할머니가"],
+    wrongWho: "버스가", wrongEmoji: "🚌💨", wrongImgUrl: ""
+  },
+  {
+    who: "동생이", action: "신나게 노래를 불러요.", emoji: "👶🎤", imgUrl: "",
+    altWhos: ["동생이", "친구가", "누나가", "아빠가"],
+    wrongWho: "사과가", wrongEmoji: "🍎✨", wrongImgUrl: ""
+  }
+];
+
+/* =========================================================
+   내부 동작 로직
+   ========================================================= */
+let mode = 1;       // 1:가수준, 2:나수준, 3:다수준, 4:4종복습퀴즈
+let step = 0;       // 현재 문항 번호 (0~3)
+let altIdx = 0;     // '누가' 단어 바꾸기 인덱스
+let curStu = 0;     // 현재 선택된 학생 (0~5)
+let leftChoiceFn = null;  // [▲] 키로 왼쪽 카드 선택용
+let rightChoiceFn = null; // [▼] 키로 오른쪽 카드 선택용
+
+let students = JSON.parse(localStorage.getItem('final_stu_names')) || ["학생A","학생B","학생C","학생D","학생E","학생F"];
+let logs = JSON.parse(localStorage.getItem('final_iep_logs')) || [];
+
+// 1. 학생 바 렌더링 ([Tab] 키로 순환 선택 가능)
+function renderStudents() {
+  const bar = document.getElementById('studentBar');
+  bar.innerHTML = students.map((name, i) => 
+    `<button class="btn-stu ${i === curStu ? 'active' : ''}" 
+      onclick="selectStu(${i})" ondblclick="renameStu(${i})" title="더블클릭: 이름 수정 / Tab키: 학생 전환">${name}</button>`
+  ).join('') + `<button class="btn-iep" onclick="openIEP()">📊 IEP기록</button>`;
+}
+
+function selectStu(idx) {
+  curStu = idx;
+  renderStudents();
+}
+
+function renameStu(idx) {
+  const newName = prompt("학생 이름을 입력하세요:", students[idx]);
+  if (newName && newName.trim()) {
+    students[idx] = newName.trim();
+    localStorage.setItem('final_stu_names', JSON.stringify(students));
+    renderStudents();
+  }
+}
+
+// 2. 빈 이미지 태그(<img class="custom-img">)가 항상 포함된 시각 자료 생성기
+function getVisualHTML(emoji, imgUrl) {
+  const hasImg = imgUrl && imgUrl.trim() !== "";
+  return `
+    <img src="${imgUrl}" class="custom-img" style="display:${hasImg ? 'block' : 'none'}" alt="수업 자료 이미지" />
+    <div class="visual-box" style="display:${hasImg ? 'none' : 'block'}">${emoji}</div>
+  `;
+}
+
+// 3. 메인 화면 렌더링
+function renderStage() {
+  const item = LESSONS[step];
+  const currentWho = item.altWhos[altIdx % item.altWhos.length];
+  const stage = document.getElementById('stage');
+  leftChoiceFn = null; rightChoiceFn = null;
+
+  document.querySelectorAll('.btn-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', i + 1 === mode);
+  });
+
+  if (mode === 1) {
+    // [1] 가수준: 문장 읽기 + '누가' 바꾸기 + 직접 타이핑
+    stage.innerHTML = `
+      <div class="step-badge">가수준 (${step + 1}/${LESSONS.length}) - [Space]로 '누가'를 바꾸어 읽고 빈칸에 써 보세요</div>
+      <div class="main-card">
+        ${getVisualHTML(item.emoji, item.imgUrl)}
+        <div class="sentence">
+          <span class="who-highlight" onclick="doSpaceAction()" style="cursor:pointer">${currentWho}</span>
+          ${item.action}
+        </div>
+        <div style="margin-top:20px; font-size:1.8rem;">
+          ✍️ 직접 쓰기: 
+          <input type="text" id="typeBox" class="type-input" placeholder="${currentWho}" 
+            onkeydown="handleInputKey(event, '${currentWho}')" />
+          <span style="font-weight:bold;">${item.action}</span>
+        </div>
+        <p style="margin-top:12px; color:#64748B; font-size:1.1rem;">💡 단어 입력 후 <b>[Enter]</b>를 치면 정답 확인! (교사 제어로 돌아가려면 <b>[ESC]</b>)</p>
+      </div>
+    `;
+  } 
+  else if (mode === 2) {
+    // [2] 나수준: 이모지/사진 + 핵심 어절 듣고 따라 말하기
+    stage.innerHTML = `
+      <div class="step-badge">나수준 (${step + 1}/${LESSONS.length}) - [Space]로 소리를 듣고 따라 말해 보세요</div>
+      <div class="main-card" onclick="doSpaceAction()" style="cursor:pointer;">
+        ${getVisualHTML(item.emoji, item.imgUrl)}
+        <div class="sentence"><span class="who-highlight">${currentWho}</span></div>
+        <div style="font-size:2.2rem; color:#475569; margin-top:8px;">"${currentWho} ${item.action}"</div>
+        <p style="margin-top:18px; color:#2563EB; font-size:1.25rem; font-weight:bold;">💡 [Space]를 누를 때마다 주인공이 바뀌며 음성이 나옵니다!</p>
+      </div>
+    `;
+  } 
+  else if (mode === 3) {
+    // [3] 다수준: 2분할 그림 선택 (▲: 왼쪽 선택 / ▼: 오른쪽 선택)
+    const isLeftAns = (step % 2 === 0);
+    const L = isLeftAns ? { who: item.who, emoji: item.emoji, img: item.imgUrl, ok: true }
+                        : { who: item.wrongWho, emoji: item.wrongEmoji, img: item.wrongImgUrl, ok: false };
+    const R = isLeftAns ? { who: item.wrongWho, emoji: item.wrongEmoji, img: item.wrongImgUrl, ok: false }
+                        : { who: item.who, emoji: item.emoji, img: item.imgUrl, ok: true };
+
+    leftChoiceFn = () => checkChoice(L.ok, L.who);
+    rightChoiceFn = () => checkChoice(R.ok, R.who);
+
+    stage.innerHTML = `
+      <div class="step-badge">다수준 (${step + 1}/${LESSONS.length}) - "${item.action}" 누가 할까요? 그림을 터치하세요!</div>
+      <div class="choice-grid">
+        <div class="choice-card" onclick="leftChoiceFn()">
+          <span class="key-hint">키보드 [▲]</span>
+          ${getVisualHTML(L.emoji, L.img)}
+          <div class="choice-label">${L.who}</div>
+        </div>
+        <div class="choice-card" onclick="rightChoiceFn()">
+          <span class="key-hint">키보드 [▼]</span>
+          ${getVisualHTML(R.emoji, R.img)}
+          <div class="choice-label">${R.who}</div>
+        </div>
+      </div>
+    `;
+  } 
+  else if (mode === 4) {
+    // [4] 요청하신 4종 복습 퀴즈 완벽 구현 (문항 1~4에 각각 배정)
+    if (step === 0) {
+      // 퀴즈 1: OX 퀴즈
+      leftChoiceFn = () => checkChoice(true, item.who);
+      rightChoiceFn = () => checkChoice(false, "오답");
+      stage.innerHTML = `
+        <div class="step-badge">복습 1/4 [OX 퀴즈] - 그림과 문장이 맞으면 ⭕, 틀리면 ❌를 고르세요!</div>
+        <div class="main-card">
+          ${getVisualHTML(item.emoji, item.imgUrl)}
+          <div class="sentence"><span class="who-highlight">${item.who}</span> ${item.action}</div>
+          <div class="choice-grid" style="margin-top:16px;">
+            <button class="choice-card" style="font-size:3.2rem; font-weight:bold;" onclick="leftChoiceFn()">
+              <span class="key-hint">[▲]</span>⭕ 맞아요
+            </button>
+            <button class="choice-card" style="font-size:3.2rem; font-weight:bold;" onclick="rightChoiceFn()">
+              <span class="key-hint">[▼]</span>❌ 아니에요
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (step === 1) {
+      // 퀴즈 2: 빈칸 넣기 문제
+      leftChoiceFn = () => checkChoice(true, item.who);
+      rightChoiceFn = () => checkChoice(false, item.wrongWho);
+      stage.innerHTML = `
+        <div class="step-badge">복습 2/4 [빈칸 넣기] - 빈칸 [ 누구? ]에 들어갈 알맞은 말은?</div>
+        <div class="main-card">
+          ${getVisualHTML(item.emoji, item.imgUrl)}
+          <div class="sentence"><span class="who-highlight">[ 누구? ]</span> ${item.action}</div>
+          <div class="choice-grid" style="margin-top:16px;">
+            <button class="choice-card" style="font-size:2.6rem; font-weight:bold;" onclick="leftChoiceFn()">
+              <span class="key-hint">[▲]</span>① ${item.who}
+            </button>
+            <button class="choice-card" style="font-size:2.6rem; font-weight:bold;" onclick="rightChoiceFn()">
+              <span class="key-hint">[▼]</span>② ${item.wrongWho}
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (step === 2) {
+      // 퀴즈 3: 단어-그림 연결(짝짓기) 문제
+      leftChoiceFn = () => checkChoice(false, item.wrongWho);
+      rightChoiceFn = () => checkChoice(true, item.who);
+      stage.innerHTML = `
+        <div class="step-badge">복습 3/4 [단어-그림 연결] - <span style="color:#D97706;">'${item.who}'</span> 단어와 짝이 되는 그림을 연결하세요!</div>
+        <div class="main-card" style="margin-bottom:16px; padding:15px;">
+          <div class="sentence" style="margin:0;"><span class="who-highlight">${item.who}</span> ➔ 어느 그림일까요?</div>
+        </div>
+        <div class="choice-grid">
+          <div class="choice-card" onclick="leftChoiceFn()">
+            <span class="key-hint">키보드 [▲]</span>
+            ${getVisualHTML(item.wrongEmoji, item.wrongImgUrl)}
+          </div>
+          <div class="choice-card" onclick="rightChoiceFn()">
+            <span class="key-hint">키보드 [▼]</span>
+            ${getVisualHTML(item.emoji, item.imgUrl)}
+          </div>
+        </div>
+      `;
+    } else {
+      // 퀴즈 4: 단어와 문장 보고 쓰기
+      stage.innerHTML = `
+        <div class="step-badge">복습 4/4 [단어·문장 보고 쓰기] - 제시된 글자를 보고 똑같이 타이핑해 보세요!</div>
+        <div class="main-card">
+          ${getVisualHTML(item.emoji, item.imgUrl)}
+          <div class="sentence"><span class="who-highlight">${item.who}</span> ${item.action}</div>
+          <div style="margin-top:20px; font-size:1.8rem;">
+            ✍️ 보고 쓰기: 
+            <input type="text" id="typeBox" class="type-input" style="width:480px;" placeholder="${item.who} ${item.action}" 
+              onkeydown="handleInputKey(event, '${item.who}')" />
+          </div>
+          <p style="margin-top:12px; color:#64748B; font-size:1.1rem;">💡 '${item.who}' 단어만 쓰거나 문장 전체를 쓰고 <b>[Enter]</b>를 누르세요!</p>
+        </div>
+      `;
+    }
+  }
+}
+
+// 4. 음성 출력 및 스페이스바 액션
+function speak(text) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR';
+  u.rate = 0.9;
+  window.speechSynthesis.speak(u);
+}
+
+function doSpaceAction() {
+  const item = LESSONS[step];
+  if (mode === 1 || mode === 2) {
+    altIdx = (altIdx + 1) % item.altWhos.length;
+    renderStage();
+    const who = item.altWhos[altIdx];
+    speak(`${who}! ${who} ${item.action}`);
+  } else {
+    speak(`${item.who} ${item.action}`);
+  }
+}
+
+// 5. 정답 확인 및 타이핑 체크
+function checkChoice(isCorrect, word) {
+  if (isCorrect) {
+    speak(`정답입니다! ${word}`);
+    recordResult(true);
+  } else {
+    speak(`다시 한번 살펴볼까요?`);
+  }
+}
+
+function handleInputKey(e, targetWho) {
+  if (e.key === 'Escape') {
+    e.target.blur();
+    return;
+  }
+  if (e.key === 'Enter') {
+    e.stopPropagation();
+    const val = e.target.value.trim();
+    if (val.includes(targetWho.replace(/[^가-힣]/g, '').slice(0, 2))) {
+      speak(`${val}! 참 잘 썼어요!`);
+      recordResult(true);
+    } else {
+      speak(`${targetWho} 글자를 보고 다시 적어보세요.`);
+    }
+  }
+}
+
+// 6. 결과 기록 및 보상 (isIndependent: true=독립수행 성공, false=도움필요/촉구)
+function recordResult(isIndependent) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const freqs = isIndependent ? [523.25, 659.25, 783.99, 1046.50] : [440, 554.37];
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.3);
+      osc.stop(ctx.currentTime + i * 0.08 + 0.3);
+    });
+  } catch(e) {}
+
+  const toast = document.getElementById('rewardToast');
+  toast.style.borderColor = isIndependent ? '#F59E0B' : '#EA580C';
+  toast.innerHTML = isIndependent 
+    ? `🎉 ${students[curStu]} 최고! 👏` 
+    : `🤝 ${students[curStu]} 함께 성공! 👍`;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 1400);
+
+  const modeNames = ["", "가수준(문장/쓰기)", "나수준(구어모방)", "다수준(그림선택)", "4종복습퀴즈"];
+  const today = new Date().toLocaleDateString('ko-KR');
+  const resultType = isIndependent ? "독립 정반응(성공)" : "교사 촉구 후 수행(도움필요)";
+  logs.push(`[${today}] ${students[curStu]} | ${modeNames[mode]} | '${LESSONS[step].who} ${LESSONS[step].action}' -> ${resultType}`);
+  localStorage.setItem('final_iep_logs', JSON.stringify(logs));
+}
+
+// 7. 탭 및 단계 전환
+function setMode(m) {
+  mode = m; altIdx = 0;
+  renderStage();
+  const titles = ["", "가수준 문장 읽기와 쓰기", "나수준 듣고 따라 말하기", "다수준 그림 선택하기", "전체 복습 퀴즈"];
+  speak(titles[m]);
+}
+
+function moveStep(dir) {
+  step = (step + dir + LESSONS.length) % LESSONS.length;
+  altIdx = 0;
+  renderStage();
+  const item = LESSONS[step];
+  speak(`${item.who} ${item.action}`);
+}
+
+// 8. IEP 모달
+function openIEP() {
+  document.getElementById('iepText').value = logs.length 
+    ? logs.join('\n') 
+    : "저장된 기록이 없습니다. 수업 중 [Enter](성공) 또는 [0](도움필요) 키를 누르면 자동 저장됩니다.";
+  document.getElementById('iepModal').style.display = 'flex';
+}
+function copyIEP() {
+  const txt = document.getElementById('iepText');
+  txt.select();
+  document.execCommand('copy');
+  alert("클립보드에 복사되었습니다! 나이스나 한글(HWP)에 붙여넣으세요.");
+}
+function clearIEP() {
+  if (confirm("기록을 모두 초기화할까요?")) {
+    logs = [];
+    localStorage.removeItem('final_iep_logs');
+    openIEP();
+  }
+}
+
+// 9. 블루투스 키보드 100% 원격 제어 매핑
+window.addEventListener('keydown', (e) => {
+  // 타이핑 중일 때는 글자 입력 우선
+  if (document.activeElement.tagName === 'INPUT') return;
+
+  if (e.key === '1') setMode(1);
+  else if (e.key === '2') setMode(2);
+  else if (e.key === '3') setMode(3);
+  else if (e.key === '4') setMode(4);
+  else if (e.key === 'Tab') { e.preventDefault(); selectStu((curStu + 1) % students.length); }
+  else if (e.key === 'ArrowRight') moveStep(1);
+  else if (e.key === 'ArrowLeft') moveStep(-1);
+  else if (e.key === 'ArrowUp' && leftChoiceFn) { e.preventDefault(); leftChoiceFn(); }
+  else if (e.key === 'ArrowDown' && rightChoiceFn) { e.preventDefault(); rightChoiceFn(); }
+  else if (e.code === 'Space') { e.preventDefault(); doSpaceAction(); }
+  else if (e.key === 'Enter') { e.preventDefault(); recordResult(true); }
+  else if (e.key === '0' || e.key === 'Backspace') { e.preventDefault(); recordResult(false); }
+  else if (e.key === 'i' || e.key === 'I') { 
+    // 'i' 키를 누르면 마우스 클릭 없이 즉시 타이핑 입력창에 커서 진입!
+    const box = document.getElementById('typeBox');
+    if (box) { e.preventDefault(); box.focus(); }
+  }
+});
+
+renderStudents();
+renderStage();
+</script>
+</body>
+</html>
